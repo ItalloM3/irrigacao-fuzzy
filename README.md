@@ -2,8 +2,6 @@
 
 Atividade Prática sobre Sistemas Fuzzy — Inteligência Artificial, UFPI, período 2026.2.
 
-> **Pendências de personalização (únicas):** substituir os marcadores `[PREENCHER: ...]` em `index.html` (nomes dos autores e URL do repositório, que aparece em dois lugares) e nas linhas abaixo.
-
 - **Autores:** [PREENCHER: nomes dos autores, até três]
 - **Aplicação publicada (GitHub Pages):** https://ItalloM3.github.io/irrigacao-fuzzy/
 - **Repositório público:** https://github.com/ItalloM3/irrigacao-fuzzy
