@@ -1,0 +1,7 @@
+{
+  "name": "sistemas-fuzzy-irrigacao",
+  "version": "1.0.0",
+  "description": "Simulador de sistema fuzzy Mamdani para recomendação de tempo de irrigação",
+  "private": true,
+  "scripts": { "test": "node tests/tests.js" }
+}

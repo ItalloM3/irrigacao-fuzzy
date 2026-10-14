@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Testes — sistema fuzzy</title>
+<style>body{font:15px/1.5 system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}.ok{color:#17695A}.fail{color:#B3261E;font-weight:700}h2{margin-top:1.5rem}small{color:#555}</style></head>
+<body><h1>Testes automatizados (6.1 a 6.5)</h1><p id="sum"></p><div id="out"></div>
+<script src="../js/format.js"></script><script src="../js/membership.js"></script><script src="../js/rules.js"></script>
+<script src="../js/inference.js"></script><script src="../js/validation.js"></script><script src="../js/state.js"></script>
+<script src="tests.js"></script>
+<script>
+var R=window.FuzzyTestResults,g='',h='',bad=0;
+R.forEach(function(r){if(r.group!==g){g=r.group;h+='<h2>'+g+'</h2>';}if(!r.ok)bad++;
+h+='<div class="'+(r.ok?'ok':'fail')+'">'+(r.ok?'✔':'✘')+' '+r.name+(r.detail?' <small>→ '+r.detail+'</small>':'')+'</div>';});
+document.getElementById('out').innerHTML=h;
+document.getElementById('sum').textContent=(R.length-bad)+'/'+R.length+' verificações passaram.';
+</script></body></html>
