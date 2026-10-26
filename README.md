@@ -2,7 +2,7 @@
 
 Atividade Prática sobre Sistemas Fuzzy — Inteligência Artificial, UFPI, período 2026.2.
 
-- **Autores:** [PREENCHER: nomes dos autores, até três]
+- **Autores:** Ítallo Márlon de Sousa Alves
 - **Aplicação publicada (GitHub Pages):** https://ItalloM3.github.io/irrigacao-fuzzy/
 - **Repositório público:** https://github.com/ItalloM3/irrigacao-fuzzy
 
@@ -22,16 +22,20 @@ Os graus de pertinência são graus de compatibilidade com termos linguísticos,
 
 Abra `index.html` no navegador (não precisa de servidor, login ou instalação) ou acesse o link do GitHub Pages.
 
+**Painel de configuração (esquerda)**
 - **Umidade / Temperatura:** campo numérico e controle deslizante sincronizados. Aceita vírgula ou ponto decimal. Valores vazios, não numéricos, `NaN`, `Infinity` ou fora do intervalo **bloqueiam** os botões e mostram uma mensagem; nada é corrigido automaticamente.
-- **Consequente de cada regra:** nove seletores (curto, médio, longo). Os antecedentes são fixos.
 - **Passo Δz:** 0,1 / 0,05 / 0,01 min.
-- **Calcular:** executa as cinco etapas de uma vez.
-- **Avançar etapa:** revela uma etapa por vez, na ordem; ao fim, informa que a sequência terminou.
+- **Base de regras:** bloco recolhível (fechado por padrão) com os nove seletores de consequente (curto, médio, longo); os antecedentes são fixos. O título indica se a base está *padrão* ou *alterada*.
+- **Calcular:** executa as cinco etapas de uma vez e abre a etapa 5.
+- **Avançar etapa:** calcula e exibe a próxima etapa; se o usuário voltou a uma etapa anterior, apenas exibe a seguinte (já calculada). Na etapa 5 fica desabilitado.
 - **Restaurar padrão:** U = 35, T = 30, regras da seção 4, Δz = 0,1 e resultados limpos.
-- Qualquer alteração de configuração **descarta os resultados** e reinicia a sequência (aviso na tela).
-- Na etapa 2, clique no nome de uma regra para inspecionar, na etapa 3, o consequente original e o recorte; a regra refletirá consequentes editados.
 
-Cada etapa traz gráficos, números e um **registro** com os cálculos reais.
+**Área principal (direita)**
+- **Tempo recomendado** (centroide) fica fixo no topo, sempre visível, junto das abas.
+- **Abas das etapas** (Fuzzificação, Avaliação das regras, Implicação, Agregação, Defuzzificação): **uma etapa por vez**. Cada aba é liberada quando sua etapa é calculada e pode ser reaberta depois; a navegação funciona também com as setas ←/→, Home e End.
+- Cada etapa traz gráficos e números; o **registro** textual com os cálculos fica recolhido e abre sob demanda.
+- Na etapa 2, selecione uma regra e use "Ver recorte na etapa 3" (ou a lista da etapa 3) para ver seu consequente original e o recorte.
+- Qualquer alteração de configuração **descarta os resultados** e reinicia a sequência (aviso na tela).
 
 ## 3. Conjuntos fixos (a, b, c, d)
 
@@ -77,7 +81,7 @@ js/membership.js      função de pertinência e conjuntos fixos
 js/rules.js           regras e consequentes configuráveis
 js/inference.js       fuzzificação, mínimo, implicação, máximo, centroide
 js/validation.js      validação de entradas
-js/state.js           estado, Calcular, Avançar, Restaurar (sem DOM)
+js/state.js           estado, etapas, Calcular, Avançar, Restaurar (sem DOM)
 js/visualization.js   gráficos SVG
 js/presentation.js    tabelas, logs, resultado
 js/main.js            eventos
@@ -89,7 +93,7 @@ A matemática (`membership`, `rules`, `inference`, `validation`, `state`) não d
 
 ## 7. Resultados dos testes
 
-Comando: `node tests/tests.js` (ou abrir `tests/index.html`). Resultado da execução: **62/62 verificações passaram**. Salvo indicação, base padrão e Δz = 0,1. Tolerâncias: 1e-6 (pertinências e ativações) e 0,01 min (tempos). O fluxo da interface (Calcular, Avançar, Restaurar, validação, alteração de regras, Δz, celular) também foi conferido em Chromium com Playwright: 40/40 verificações.
+Comando: `node tests/tests.js` (ou abrir `tests/index.html`). Resultado da execução: **73/73 verificações passaram** (62 de matemática e validação mais 11 da navegação por etapas). Salvo indicação, base padrão e Δz = 0,1. Tolerâncias: 1e-6 (pertinências e ativações) e 0,01 min (tempos). O fluxo da interface (Calcular, Avançar, Restaurar, validação, alteração de regras, Δz, celular) também foi conferido em Chromium com Playwright: 57/57 verificações (uma etapa visível por vez, abas, resultado fixo no topo, base de regras e logs recolhidos, teclado).
 
 ### 6.1 Pertinências e extremos
 | Entrada | Obtido (ordem dos conjuntos) | Conclusão |
@@ -134,7 +138,7 @@ Também: μcurto(0) = 1, μlongo(30) = 1; varredura de todo o domínio de todos 
 ### 6.5 Validação da interface e determinismo
 - Bloqueados com mensagem clara e sem correção automática: U = −1, 101, vazio, espaços, `abc`, `Infinity`, `NaN`; T = 9, 41, vazio, `xyz`, `-Infinity`, `NaN`. Aceitos: 0, 100, 35, 35,5, 35.5 (U); 10, 30, 40 (T).
 - Repetir a mesma configuração reproduz graus, ativações, área agregada e tempo de forma idêntica.
-- Calcular direto e percorrer as cinco etapas dão saída idêntica (verificado em `tests.js` e na interface); depois da etapa 5, Avançar não faz nada.
+- Calcular direto e percorrer as cinco etapas dão saída idêntica (verificado em `tests.js` e na interface); depois da etapa 5, Avançar não faz nada. Voltar a uma aba anterior não recalcula nada.
 - Denominador zero → saída inválida, sem 0, NaN ou Infinity.
 
 **Conclusão:** validação e determinismo conforme a especificação.

@@ -9,7 +9,8 @@
   }
 
   function createState() {
-    return { config: defaultConfig(), step: 0, stage: {}, selectedRule: null };
+    // step = etapas já calculadas (0–5); view = etapa exibida (0 = nenhuma; sempre ≤ step)
+    return { config: defaultConfig(), step: 0, view: 0, stage: {}, selectedRule: null };
   }
 
   function firstActive(rules) {
@@ -20,7 +21,7 @@
   /** Descarta resultados e reinicia a sequência. Retorna true se havia resultados. */
   function invalidate(state) {
     const had = state.step > 0;
-    state.step = 0; state.stage = {}; state.selectedRule = null;
+    state.step = 0; state.view = 0; state.stage = {}; state.selectedRule = null;
     return had;
   }
 
@@ -33,7 +34,7 @@
   function runAll(state, values) {
     const r = I.infer(values);
     state.stage = { fuzz: r.fuzz, rules: r.rules, grid: r.grid, clips: r.clips, aggregate: r.aggregate, defuzz: r.defuzz };
-    state.step = 5;
+    state.step = 5; state.view = 5;
     if (state.selectedRule === null) state.selectedRule = firstActive(r.rules);
   }
 
@@ -46,10 +47,22 @@
     else if (next === 3) { st.grid = I.makeGrid(values.dz); st.clips = I.implicate(st.rules, st.grid); }
     else if (next === 4) st.aggregate = I.aggregate(st.clips, st.grid);
     else st.defuzz = I.defuzzify(st.grid, st.aggregate);
-    state.step = next;
+    state.step = next; state.view = next;
     return true;
   }
 
+  /** Exibe uma etapa já calculada (abas de navegação). */
+  function setView(state, k) {
+    if (Number.isInteger(k) && k >= 1 && k <= state.step) { state.view = k; return true; }
+    return false;
+  }
+
+  /** Avançar etapa: se a próxima já foi calculada apenas a exibe; senão calcula e exibe. */
+  function next(state, values) {
+    if (state.view < state.step) { state.view += 1; return true; }
+    return advance(state, values);
+  }
+
   F.state = { defaultConfig: defaultConfig, createState: createState, invalidate: invalidate,
-              restoreDefaults: restoreDefaults, runAll: runAll, advance: advance, firstActive: firstActive };
+              restoreDefaults: restoreDefaults, runAll: runAll, advance: advance, setView: setView, next: next, firstActive: firstActive };
 })(typeof window !== 'undefined' ? window : globalThis);

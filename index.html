@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Irrigação fuzzy — simulador Mamdani</title>
   <meta name="description" content="Simulador de sistema fuzzy Mamdani que recomenda o tempo de irrigação de um jardim a partir da umidade do solo e da temperatura.">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <a class="skip" href="#main">Ir para o conteúdo</a>
@@ -17,7 +17,7 @@
     </div>
     <p class="meta">
       UFPI, Inteligência Artificial, 2026.2<br>
-      Autores: Ítallo Márlon<br>
+      Autores: Ítallo Márlon de Sousa Alves<br>
       <a id="repo-link" href="https://github.com/ItalloM3/irrigacao-fuzzy">Código-fonte no GitHub</a>
     </p>
   </header>
@@ -32,7 +32,7 @@
           <input id="in-U" type="text" inputmode="decimal" autocomplete="off" aria-describedby="hint-U err-U">
           <input id="sl-U" type="range" min="0" max="100" step="1" aria-label="Umidade do solo, controle deslizante">
         </div>
-        <p class="hint" id="hint-U">Valores de 0 a 100 %. Inicial: 35 %.</p>
+        <p class="hint" id="hint-U">De 0 a 100 %. Inicial: 35 %.</p>
         <p class="error" id="err-U" role="alert"></p>
       </div>
 
@@ -42,7 +42,7 @@
           <input id="in-T" type="text" inputmode="decimal" autocomplete="off" aria-describedby="hint-T err-T">
           <input id="sl-T" type="range" min="10" max="40" step="0.5" aria-label="Temperatura, controle deslizante">
         </div>
-        <p class="hint" id="hint-T">Valores de 10 a 40 °C. Inicial: 30 °C.</p>
+        <p class="hint" id="hint-T">De 10 a 40 °C. Inicial: 30 °C.</p>
         <p class="error" id="err-T" role="alert"></p>
       </div>
 
@@ -55,11 +55,14 @@
         </select>
       </div>
 
-      <fieldset class="rules-fs">
-        <legend>Consequente de cada regra</legend>
-        <p class="hint">Os antecedentes são fixos. Cada regra sempre tem um consequente.</p>
-        <div id="rules-editor"></div>
-      </fieldset>
+      <details class="rules-details" id="rules-details">
+        <summary>Base de regras <span id="rules-flag" class="flag">padrão</span></summary>
+        <fieldset class="rules-fs">
+          <legend class="sr">Consequente de cada regra</legend>
+          <p class="hint">Escolha o consequente de cada regra. Os antecedentes são fixos e todas as regras permanecem preenchidas.</p>
+          <div id="rules-editor"></div>
+        </fieldset>
+      </details>
 
       <div class="actions">
         <button type="button" id="btn-calc" class="primary">Calcular</button>
@@ -68,46 +71,48 @@
       </div>
       <p class="hint" id="next-hint"></p>
       <p id="status" class="status" role="status" aria-live="polite"></p>
-
-      <div id="result-box" class="result idle" aria-live="polite"></div>
     </aside>
 
     <main id="main">
-      <nav aria-label="Etapas da inferência"><ol id="pipeline" class="pipeline"></ol></nav>
+      <div class="dock">
+        <div id="result-box" class="result idle" aria-live="polite"></div>
+        <nav aria-label="Etapas da inferência"><ol id="pipeline" class="pipeline" role="tablist" aria-label="Etapas da inferência Mamdani"></ol></nav>
+      </div>
 
       <section id="empty" class="empty">
         <h2>Nenhum resultado ainda</h2>
         <p>Ajuste a umidade e a temperatura e use <b>Calcular</b> para ver a inferência completa, ou <b>Avançar etapa</b> para acompanhar uma etapa por vez: fuzzificação, avaliação das regras, implicação, agregação e defuzzificação.</p>
       </section>
 
-      <section class="step" id="step-1" hidden aria-labelledby="h1">
+      <section class="step" id="step-1" role="tabpanel" hidden aria-labelledby="tab-1">
         <h2 id="h1">1. Fuzzificação</h2>
         <p class="lede">Cada entrada recebe um grau de pertinência em cada conjunto, inclusive os iguais a zero.</p>
         <div class="pair-charts">
           <figure><div id="chart-umidade" class="chart"></div><figcaption id="deg-umidade"></figcaption></figure>
           <figure><div id="chart-temperatura" class="chart"></div><figcaption id="deg-temperatura"></figcaption></figure>
         </div>
-        <details class="log" open><summary>Registro da etapa</summary><ul id="log-1"></ul></details>
+        <details class="log"><summary>Registro da etapa</summary><ul id="log-1"></ul></details>
       </section>
 
-      <section class="step" id="step-2" hidden aria-labelledby="h2">
+      <section class="step" id="step-2" role="tabpanel" hidden aria-labelledby="tab-2">
         <h2 id="h2">2. Avaliação das regras</h2>
-        <p class="lede">O operador E é o mínimo: h(r) = min(μ umidade, μ temperatura). Regras ativadas aparecem destacadas. Clique no nome de uma regra para inspecionar seu recorte na etapa 3.</p>
+        <p class="lede">O operador E é o mínimo: h(r) = min(μ umidade, μ temperatura). Regras ativadas aparecem destacadas. Selecione uma regra para inspecionar seu recorte na etapa 3.</p>
         <div class="scroll">
           <table class="rules">
             <caption class="sr">Base de nove regras e suas ativações</caption>
             <thead><tr>
               <th scope="col">Regra</th><th scope="col">Umidade</th><th scope="col">Temperatura</th>
-              <th scope="col" class="num">μ umidade</th><th scope="col" class="num">μ temperatura</th>
-              <th scope="col" class="num">h(r) = mínimo</th><th scope="col">Então o tempo é</th><th scope="col">Estado</th>
+              <th scope="col" class="num">μ(U)</th><th scope="col" class="num">μ(T)</th>
+              <th scope="col" class="num">h(r) = mín.</th><th scope="col">Consequente</th><th scope="col">Estado</th>
             </tr></thead>
             <tbody id="rules-body"></tbody>
           </table>
         </div>
-        <details class="log" open><summary>Registro da etapa</summary><ul id="log-2"></ul></details>
+        <p id="rule-nav" class="rule-nav"></p>
+        <details class="log"><summary>Registro da etapa</summary><ul id="log-2"></ul></details>
       </section>
 
-      <section class="step" id="step-3" hidden aria-labelledby="h3">
+      <section class="step" id="step-3" role="tabpanel" hidden aria-labelledby="tab-3">
         <h2 id="h3">3. Implicação</h2>
         <p class="lede">O consequente de cada regra é recortado na altura da sua ativação: μ_r(z) = min(h(r), μ consequente(z)).</p>
         <div class="field inline">
@@ -117,24 +122,24 @@
         <figure><div id="chart-rule" class="chart"></div><figcaption id="rule-caption"></figcaption></figure>
         <h3>Regras ativadas</h3>
         <div id="gallery" class="gallery"></div>
-        <details class="log" open><summary>Registro da etapa</summary><ul id="log-3"></ul></details>
+        <details class="log"><summary>Registro da etapa</summary><ul id="log-3"></ul></details>
       </section>
 
-      <section class="step" id="step-4" hidden aria-labelledby="h4">
+      <section class="step" id="step-4" role="tabpanel" hidden aria-labelledby="tab-4">
         <h2 id="h4">4. Agregação</h2>
         <p class="lede">Os recortes são combinados pelo máximo ponto a ponto. Regras que concluem o mesmo termo não somam.</p>
         <figure><div id="chart-agg" class="chart"></div></figure>
-        <details class="log" open><summary>Registro da etapa</summary><ul id="log-4"></ul></details>
+        <details class="log"><summary>Registro da etapa</summary><ul id="log-4"></ul></details>
       </section>
 
-      <section class="step" id="step-5" hidden aria-labelledby="h5">
+      <section class="step" id="step-5" role="tabpanel" hidden aria-labelledby="tab-5">
         <h2 id="h5">5. Defuzzificação</h2>
         <p class="lede">O centroide da área agregada, calculado numericamente pelo método dos pontos médios, dá o tempo recomendado.</p>
         <div class="out-grid">
           <figure><div id="chart-out" class="chart"></div></figure>
           <div id="calc-out"></div>
         </div>
-        <details class="log" open><summary>Registro da etapa</summary><ul id="log-5"></ul></details>
+        <details class="log"><summary>Registro da etapa</summary><ul id="log-5"></ul></details>
       </section>
 
       <details class="ref">
@@ -146,7 +151,7 @@
 
   <footer>
     <p>Os graus de pertinência são graus de compatibilidade com termos linguísticos, não probabilidades. O tempo recomendado vem de regras e conjuntos definidos à mão, não de aprendizado.</p>
-    <p>Código-fonte: <a href="https://github.com/USUARIO/REPOSITORIO">repositório público no GitHub</a> <span class="pending">[PREENCHER: mesma URL do cabeçalho]</span></p>
+    <p>Código-fonte: <a href="https://github.com/ItalloM3/irrigacao-fuzzy">repositório público no GitHub</a></p>
   </footer>
 
   <script src="js/format.js"></script>
