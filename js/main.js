@@ -32,7 +32,17 @@
       $(f[1]).setAttribute('aria-invalid', v.errors[f[0]] ? 'true' : 'false');
     });
     state.blocked = !v.ok;
+    flagRules();
     return v.ok ? v.values : null;
+  }
+
+  function isDefaultRules() {
+    return state.config.consequents.join() === F.rules.DEFAULT_CONSEQUENTS.join();
+  }
+  function flagRules() {
+    const f = $('rules-flag'), d = isDefaultRules();
+    f.textContent = d ? 'padrão' : 'alterada';
+    f.className = 'flag' + (d ? '' : ' changed');
   }
 
   function status(msg, kind) { const s = $('status'); s.textContent = msg; s.className = 'status' + (kind ? ' ' + kind : ''); }
@@ -47,10 +57,12 @@
     P.render(state);
   }
 
-  function scrollTo(id) {
-    const el = $(id);
-    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  /** Se a área principal começa acima da janela, volta ao seu topo. */
+  function toMainTop() {
+    const el = $('main');
+    if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }
+  function showTab(k) { if (S.setView(state, k)) { P.render(state); const t = $('tab-' + k); if (t) t.focus(); } }
 
   function bind() {
     $('in-U').addEventListener('input', function (e) { state.config.U = e.target.value; const r = VAL.validateU(e.target.value); if (r.ok) $('sl-U').value = r.value; changed(); });
@@ -66,13 +78,13 @@
     $('btn-calc').addEventListener('click', function () {
       const v = check(); if (!v) { P.render(state); status('Corrija os campos destacados para calcular.', 'warn'); return; }
       S.runAll(state, v); P.render(state);
-      status('Cálculo completo: as cinco etapas foram executadas.', 'ok'); scrollTo('step-5');
+      status('Cálculo completo: as cinco etapas foram executadas.', 'ok'); toMainTop();
     });
     $('btn-next').addEventListener('click', function () {
       const v = check(); if (!v) { P.render(state); status('Corrija os campos destacados para continuar.', 'warn'); return; }
-      if (!S.advance(state, v)) return;
+      if (!S.next(state, v)) return;
       P.render(state);
-      status('Etapa ' + state.step + ' de 5 concluída: ' + P.STEP_NAMES[state.step - 1] + '.', 'ok'); scrollTo('step-' + state.step);
+      status('Etapa ' + state.view + ' de 5: ' + P.STEP_NAMES[state.view - 1] + '.', 'ok'); toMainTop();
     });
     $('btn-reset').addEventListener('click', function () {
       S.restoreDefaults(state); writeControls(); check(); P.render(state);
@@ -86,6 +98,18 @@
       const again = document.querySelector('#rules-body [data-rule="' + state.selectedRule + '"]');
       if (e.currentTarget.id === 'rules-body' && again) again.focus();
     }
+    $('pipeline').addEventListener('click', function (e) {
+      const b = e.target.closest('button[role=tab]'); if (b && !b.disabled) showTab(Number(b.id.slice(4)));
+    });
+    $('pipeline').addEventListener('keydown', function (e) {
+      const keys = { ArrowLeft: -1, ArrowRight: 1, Home: 'first', End: 'last' };
+      if (!(e.key in keys) || state.step < 1) return;
+      e.preventDefault();
+      let k = state.view;
+      if (keys[e.key] === 'first') k = 1; else if (keys[e.key] === 'last') k = state.step; else k = Math.min(state.step, Math.max(1, k + keys[e.key]));
+      showTab(k);
+    });
+    $('rule-nav').addEventListener('click', function (e) { if (e.target.closest('[data-goto]')) showTab(3); });
     $('rules-body').addEventListener('click', pick);
     $('gallery').addEventListener('click', pick);
     $('sel-rule').addEventListener('change', function (e) { state.selectedRule = Number(e.target.value); P.render(state); });

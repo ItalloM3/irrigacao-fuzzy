@@ -115,8 +115,7 @@
       '<tr><th scope="row">Método</th><td>pontos médios, N = ' + g.N + ', Δz = ' + n(g.dz) + ' min</td></tr>' +
       '<tr><th scope="row">Σ z(k) · μ(z(k))</th><td class="num">' + n(d.numerator, 6) + '</td></tr>' +
       '<tr><th scope="row">Σ μ(z(k))</th><td class="num">' + n(d.denominator, 6) + '</td></tr>' +
-      '<tr><th scope="row">z* = Σ z·μ / Σ μ</th><td class="num">' + n(d.centroid, 6) + ' min</td></tr></tbody></table>' +
-      '<p class="big" aria-label="Tempo recomendado">' + fx(d.centroid, 2) + '<small> min</small></p>';
+      '<tr><th scope="row">z* = Σ z·μ / Σ μ</th><td class="num">' + n(d.centroid, 6) + ' min</td></tr></tbody></table>';
     $('log-5').innerHTML = logHtml([
       'Centroide da saída agregada: z* = Σ[z(k) · μ(z(k))] / Σ[μ(z(k))] = ' + n(d.numerator) + ' / ' + n(d.denominator) + ' = ' + n(d.centroid) + ' min.',
       'Δz multiplica numerador e denominador, então se cancela no quociente; ele só define a resolução da grade.',
@@ -124,23 +123,39 @@
     ]);
   }
 
-  /* ---------- Pipeline, resultado, vazio ---------- */
+  /* ---------- Abas das etapas, resultado ---------- */
   function pipeline(st) {
     $('pipeline').innerHTML = STEP_NAMES.map(function (name, i) {
-      const k = i + 1, cls = st.step >= k ? 'done' : (st.step + 1 === k ? 'next' : 'todo');
-      const label = '<span class="node">' + k + '</span><span class="pname">' + name + '</span>';
-      return '<li class="' + cls + '"' + (st.step + 1 === k ? ' aria-current="step"' : '') + '>' +
-        (st.step >= k ? '<a href="#step-' + k + '">' + label + '</a>' : label) + '</li>';
+      const k = i + 1, reached = st.step >= k, cur = st.view === k;
+      const cls = cur ? 'current' : (reached ? 'done' : (st.step + 1 === k ? 'next' : 'todo'));
+      return '<li role="presentation" class="' + cls + '"><button type="button" role="tab" class="tab" id="tab-' + k + '" aria-controls="step-' + k + '"' +
+        ' aria-selected="' + cur + '" tabindex="' + (cur ? 0 : -1) + '"' + (reached ? '' : ' disabled') +
+        (reached || st.step + 1 !== k ? '' : ' title="Use Avançar etapa para calcular esta etapa"') + '>' +
+        '<span class="node" aria-hidden="true">' + (reached && !cur ? '✓' : k) + '</span><span class="pname">' + name + '</span></button></li>';
     }).join('');
   }
 
   function result(st) {
     const box = $('result-box');
-    if (st.step < 5) { box.className = 'result idle'; box.innerHTML = '<span class="rl">Tempo recomendado</span><span class="rv">—</span>'; return; }
-    const d = st.stage.defuzz;
-    if (!d.valid) { box.className = 'result bad'; box.innerHTML = '<span class="rl">Tempo recomendado</span><span class="rm">' + d.message + '</span>'; return; }
+    const head = '<span class="rl">Tempo recomendado</span>';
+    if (st.step < 5) {
+      box.className = 'result idle';
+      box.innerHTML = head + '<span class="rv">—</span><span class="rs">Disponível ao concluir a etapa 5 (defuzzificação). Use Calcular ou avance etapa por etapa.</span>';
+      return;
+    }
+    const d = st.stage.defuzz, f = st.stage.fuzz, g = st.stage.grid;
+    if (!d.valid) { box.className = 'result bad'; box.innerHTML = head + '<span class="rv">—</span><span class="rm">' + d.message + '</span>'; return; }
     box.className = 'result';
-    box.innerHTML = '<span class="rl">Tempo recomendado</span><span class="rv">' + fx(d.centroid, 2) + ' <small>min</small></span><span class="rs">z* = ' + n(d.centroid, 6) + ' min</span>';
+    box.innerHTML = head + '<span class="rv">' + fx(d.centroid, 2) + ' <small>min</small></span>' +
+      '<span class="rs">Centroide z* = ' + n(d.centroid, 6) + ' min<br>para U = ' + n(f.U) + ' %, T = ' + n(f.T) + ' °C, Δz = ' + n(g.dz) + ' min</span>';
+  }
+
+  function ruleNav(st) {
+    const el = $('rule-nav');
+    if (st.step < 2) { el.innerHTML = ''; return; }
+    const r = st.stage.rules[st.selectedRule === null ? 0 : st.selectedRule];
+    el.innerHTML = 'Regra selecionada: <b>' + r.id + '</b>. ' +
+      (st.step >= 3 ? '<button type="button" data-goto="3">Ver recorte na etapa 3</button>' : 'O recorte aparece ao avançar para a etapa 3.');
   }
 
   function fixedSets() {
@@ -154,19 +169,19 @@
     $('fixed-sets').innerHTML = h + '</tbody></table>';
   }
 
-  /** Redesenha tudo que depende do estado. */
+  /** Redesenha tudo que depende do estado. Só a etapa em exibição fica visível. */
   function render(st) {
     pipeline(st); result(st);
-    for (let k = 1; k <= 5; k++) $('step-' + k).hidden = st.step < k;
+    for (let k = 1; k <= 5; k++) $('step-' + k).hidden = !(st.view === k && st.step >= k);
     $('empty').hidden = st.step > 0;
     if (st.step >= 1) stage1(st);
-    if (st.step >= 2) stage2(st);
+    if (st.step >= 2) { stage2(st); ruleNav(st); }
     if (st.step >= 3) stage3(st);
     if (st.step >= 4) stage4(st);
     if (st.step >= 5) stage5(st);
-    $('btn-next').disabled = st.step >= 5 || !!st.blocked;
+    $('btn-next').disabled = st.view >= 5 || !!st.blocked;
     $('btn-calc').disabled = !!st.blocked;
-    $('next-hint').textContent = st.step >= 5 ? 'Sequência concluída: as cinco etapas foram executadas.' : 'Próxima etapa: ' + (st.step + 1) + ' · ' + STEP_NAMES[st.step] + '.';
+    $('next-hint').textContent = st.view >= 5 ? 'Sequência concluída: as cinco etapas foram executadas.' : 'Próxima etapa: ' + (st.view + 1) + ' · ' + STEP_NAMES[st.view] + '.';
   }
 
   F.presentation = { render: render, fixedSets: fixedSets, STEP_NAMES: STEP_NAMES, LABEL: L };

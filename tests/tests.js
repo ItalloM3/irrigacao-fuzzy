@@ -164,6 +164,31 @@
     check(g, 'Denominador zero → saída inválida (sem 0, NaN ou Infinity)', den.valid === false && den.centroid === null && den.message.length > 0);
   })();
 
+  /* ---------- Wizard (uma etapa por vez) ---------- */
+  (function () {
+    const g = 'Navegação por etapas';
+    const vals = V.validateConfig({ U: '35', T: '30', dz: '0.1', consequents: DEF.slice() }).values;
+    const st = S.createState();
+    check(g, 'Início: nenhuma etapa calculada nem exibida', st.step === 0 && st.view === 0);
+    check(g, 'Aba de etapa não calculada não pode ser aberta', S.setView(st, 1) === false && st.view === 0);
+    S.next(st, vals);
+    check(g, 'Avançar calcula e exibe a etapa 1', st.step === 1 && st.view === 1);
+    S.next(st, vals); S.next(st, vals);
+    check(g, 'Etapas 2 e 3 calculadas na ordem', st.step === 3 && st.view === 3);
+    check(g, 'Aba anterior é aberta sem recalcular', S.setView(st, 1) === true && st.view === 1 && st.step === 3);
+    S.next(st, vals);
+    check(g, 'Avançar após voltar apenas exibe a próxima etapa já calculada', st.view === 2 && st.step === 3);
+    check(g, 'Não é possível abrir etapa além da última calculada', S.setView(st, 4) === false && S.setView(st, 6) === false && S.setView(st, 0) === false);
+    S.next(st, vals); S.next(st, vals); S.next(st, vals);
+    check(g, 'Chega à etapa 5 e para (nada além)', st.step === 5 && st.view === 5 && S.next(st, vals) === false);
+    S.setView(st, 2); S.next(st, vals); S.next(st, vals); S.next(st, vals);
+    check(g, 'Voltar e avançar de novo termina na etapa 5 com o mesmo tempo', st.view === 5 && st.stage.defuzz.centroid.toFixed(2) === '16.79');
+    S.invalidate(st);
+    check(g, 'Alterar configuração reinicia etapas e exibição', st.step === 0 && st.view === 0);
+    S.runAll(st, vals);
+    check(g, 'Calcular completa as 5 etapas e exibe a 5', st.step === 5 && st.view === 5);
+  })();
+
   /* ---------- Saída ---------- */
   const failed = results.filter(function (r) { return !r.ok; });
   root.FuzzyTestResults = results;
